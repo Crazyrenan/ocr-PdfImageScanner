@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('ocr_documents', function (Blueprint $table) {
             $table->id();
             $table->string('original_filename');
-            $table->longText('extracted_text'); // Use LONGTEXT for a lot of text
+            $table->string('stored_path'); // To store the file path
+            $table->longText('extracted_text');
+            $table->json('word_data')->nullable(); // Column for coordinates
             $table->timestamps();
         });
-    }
+}
 
     /**
      * Reverse the migrations.
