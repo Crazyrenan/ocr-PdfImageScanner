@@ -17,3 +17,4 @@ Route::get('/search', [OcrController::class, 'showSearchForm'])->name('search.fo
 Route::get('/search/results', [OcrController::class, 'handleSearch'])->name('search.results');
 
 Route::get('/documents/{id}', [OcrController::class, 'showDocumentViewer'])->name('document.viewer');
+Route::get('/images/{id}', [OcrController::class, 'showImageViewer'])->name('image.viewer');

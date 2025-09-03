@@ -14,12 +14,17 @@ class OcrController extends Controller
         return view('ocr.upload-file');
     }
 
-
     public function processOcr(Request $request)
     {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'file' => 'required|mimes:jpeg,png,jpg,pdf|max:10240',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('ocr.form')
+                ->with('status', 'error')
+                ->with('message', 'Upload failed. Please choose a valid image or PDF file.');
+        }
 
         $file = $request->file('file');
         $originalFilename = $file->getClientOriginalName();
@@ -35,46 +40,58 @@ class OcrController extends Controller
             if ($response->successful()) {
                 $data = $response->json();
 
+                // Save document to the database
                 $document = new OcrDocument();
                 $document->original_filename = $originalFilename;
                 $document->stored_path = $path;
                 $document->extracted_text = $data['text'];
                 $document->word_data = json_encode($data['word_data']);
+                $document->thumbnail_path = $data['thumbnail_path'];
                 $document->save();
-                
-                if ($file->getMimeType() == 'application/pdf') {
-                    return redirect()->route('document.viewer', ['id' => $document->id]);
-                } else {
-                    // If it's an image, go to a simple result page
-                    return view('ocr.result-image', [
-                        'text' => $data['text'],
-                        'path' => $path
-                    ]);
-                }
-
+            
+                $isPdf = $file->getMimeType() == 'application/pdf';
+                return redirect()->route('ocr.form')
+                    ->with('status', 'success')
+                    ->with('message', 'File processed successfully! Redirecting...')
+                    ->with('document_id', $document->id) // Pass the new ID
+                    ->with('is_pdf', $isPdf); // Pass the file type
             } else {
-                // ... error handling
-                Log::error('OCR Service Error: ' . $response->body());
-                return redirect()->back()->withErrors(['error' => 'The OCR service returned an error.']);
+                $errorMessage = $response->json()['error'] ?? 'The OCR service returned an error.';
+                return redirect()->route('ocr.form')
+                    ->with('status', 'error')
+                    ->with('message', $errorMessage);
             }
         } catch (\Exception $e) {
-            // ... connection error handling
             Log::error('Connection to OCR service failed: ' . $e->getMessage());
-            return redirect()->back()->withErrors(['error' => 'Could not connect to the OCR service. Is it running?']);
+            return redirect()->route('ocr.form')
+                ->with('status', 'error')
+                ->with('message', 'Could not connect to the OCR service.');
         }
     }
     public function showSearchForm()
     {
-        return view('ocr.search');
+        // Fetch all documents and pass them to the view
+        $documents = OcrDocument::latest()->get(); // 'latest()' orders them by most recent
+
+        return view('ocr.search', ['documents' => $documents]);
     }
 
     public function handleSearch(Request $request)
     {
         $query = $request->input('query');
-        $results = OcrDocument::where('extracted_text', 'LIKE', "%{$query}%")->get();
 
+        // If the search query is empty, redirect to the main search page
+        if (empty($query)) {
+            return redirect()->route('search.form');
+        }
+        
+        // Search the database for documents containing the query text
+        $documents = OcrDocument::where('extracted_text', 'LIKE', "%{$query}%")
+            ->latest()
+            ->get();
+        
         return view('ocr.search', [
-            'results' => $results,
+            'documents' => $documents,
             'query' => $query
         ]);
     }
@@ -83,5 +100,14 @@ class OcrController extends Controller
     {
         $document = OcrDocument::findOrFail($id);
         return view('ocr.viewer', ['document' => $document]);
+    }
+    public function showImageViewer($id)
+    {
+        $document = OcrDocument::findOrFail($id);
+
+        return view('ocr.result-image', [
+            'text' => $document->extracted_text,
+            'path' => $document->stored_path
+        ]);
     }
 }

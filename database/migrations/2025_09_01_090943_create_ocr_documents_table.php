@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('original_filename');
             $table->string('stored_path'); // To store the file path
             $table->longText('extracted_text');
-            $table->json('word_data')->nullable(); // Column for coordinates
+            $table->json('word_data')->nullable(); 
+            $table->string('thumbnail_path')->nullable(); 
             $table->timestamps();
         });
 }
