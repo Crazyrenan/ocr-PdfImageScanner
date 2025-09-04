@@ -95,15 +95,13 @@
                             @php
                                 $isPdf = Str::endsWith(strtolower($doc->stored_path), '.pdf');
                                 $viewRoute = $isPdf ? route('document.viewer', ['id' => $doc->id]) : route('image.viewer', ['id' => $doc->id]);
-                                
-                                // This is the logic to choose the correct thumbnail
-                                $thumbnailUrl = $isPdf && $doc->thumbnail_path ? $doc->thumbnail_path : $doc->stored_path;
+                                 $thumbnailUrl = $isPdf && $doc->thumbnail_path ? $doc->thumbnail_path : 'storage/' . $doc->stored_path;
                             @endphp
 
                             <a href="{{ $viewRoute }}" class="block p-6 bg-gray-800 border border-gray-700 rounded-lg shadow hover:bg-gray-700/50 hover:border-blue-600 transition-all duration-200">
                                 <div class="flex items-start gap-4">
                                     
-                                    <img src="{{ asset('storage/' . $thumbnailUrl) }}" alt="Thumbnail" class="w-24 h-auto rounded-md border border-gray-600 shrink-0">
+                                    <img src="{{ asset($thumbnailUrl) }}" alt="Thumbnail" class="w-24 h-auto rounded-md border border-gray-600 shrink-0">
 
                                     <div class="flex-1">
                                         <div class="flex items-center gap-3">

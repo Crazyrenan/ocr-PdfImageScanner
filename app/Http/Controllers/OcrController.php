@@ -9,6 +9,30 @@ use Illuminate\Support\Facades\Log;
 
 class OcrController extends Controller
 {
+    public function processFile(Request $request)
+    {
+        $request->validate(['file' => 'required|file']);
+
+        $file = $request->file('file');
+
+        try {
+            $response = Http::attach(
+                'file',
+                file_get_contents($file),
+                $file->getClientOriginalName()
+            )->post(config('services.ocr.url') . '/ocr');
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            return response()->json(['error' => 'Failed to process file.'], 500);
+
+        } catch (\Exception $e) {
+            Log::error('OCR service connection failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Could not connect to OCR service.'], 500);
+        }
+    }
     public function showUploadForm()
     {
         return view('ocr.upload-file');
@@ -35,12 +59,11 @@ class OcrController extends Controller
                 'file',
                 file_get_contents($file),
                 $originalFilename
-            )->post('http://127.0.0.1:5000/ocr');
+            )->post(config('services.ocr.url') . '/ocr');
 
             if ($response->successful()) {
                 $data = $response->json();
 
-                // Save document to the database
                 $document = new OcrDocument();
                 $document->original_filename = $originalFilename;
                 $document->stored_path = $path;

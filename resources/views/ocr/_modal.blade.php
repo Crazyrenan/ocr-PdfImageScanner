@@ -58,8 +58,6 @@
                 modal.style.display = 'none';
             });
         }
-        
-        // This is the auto-redirect script that was missing
         @if (session('status') == 'success' && session('document_id'))
             setTimeout(function () {
                 const isPdf = {{ session('is_pdf') ? 'true' : 'false' }};
