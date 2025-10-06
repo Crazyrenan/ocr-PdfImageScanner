@@ -76,8 +76,8 @@ class OcrController extends Controller
                 return redirect()->route('ocr.form')
                     ->with('status', 'success')
                     ->with('message', 'File processed successfully! Redirecting...')
-                    ->with('document_id', $document->id) // Pass the new ID
-                    ->with('is_pdf', $isPdf); // Pass the file type
+                    ->with('document_id', $document->id) 
+                    ->with('is_pdf', $isPdf);
             } else {
                 $errorMessage = $response->json()['error'] ?? 'The OCR service returned an error.';
                 return redirect()->route('ocr.form')
@@ -91,10 +91,12 @@ class OcrController extends Controller
                 ->with('message', 'Could not connect to the OCR service.');
         }
     }
+
+    //search doank
     public function showSearchForm()
     {
-        // Fetch all documents and pass them to the view
-        $documents = OcrDocument::latest()->get(); // 'latest()' orders them by most recent
+        
+        $documents = OcrDocument::latest()->get(); 
 
         return view('ocr.search', ['documents' => $documents]);
     }
@@ -103,12 +105,12 @@ class OcrController extends Controller
     {
         $query = $request->input('query');
 
-        // If the search query is empty, redirect to the main search page
+       
         if (empty($query)) {
             return redirect()->route('search.form');
         }
         
-        // Search the database for documents containing the query text
+        
         $documents = OcrDocument::where('extracted_text', 'LIKE', "%{$query}%")
             ->latest()
             ->get();
@@ -118,7 +120,7 @@ class OcrController extends Controller
             'query' => $query
         ]);
     }
-    // in app/Http/Controllers/OcrController.php
+   
     public function showDocumentViewer($id)
     {
         $document = OcrDocument::findOrFail($id);
